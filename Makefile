@@ -13,8 +13,11 @@
 # LLVM_SRC_PATH is the path to the root of the checked out source code. This
 # directory should contain the configure script, the include/ and lib/
 # directories of LLVM, Clang in tools/clang/, etc.
-# Alternatively, if you're building vs. a binary download of LLVM, then
-# LLVM_SRC_PATH can point to the main untarred directory.
+#
+# Alternatively, if you're building vs. a binary distribution of LLVM
+# (downloaded from llvm.org), then LLVM_SRC_PATH can point to the main untarred
+# directory of the binary download (the directory that has bin/, lib/, include/
+# and other directories inside).
 LLVM_SRC_PATH := $$HOME/llvm/llvm_svn_rw
 
 # LLVM_BUILD_PATH is the directory in which you built LLVM - where you ran
@@ -43,6 +46,9 @@ $(info -----------------------------------------------)
 # CXX has to be a fairly modern C++ compiler that supports C++11. gcc 4.8 and
 # higher or Clang 3.2 and higher are recommended. Best of all, if you build LLVM
 # from sources, use the same compiler you built LLVM with.
+# Note: starting with release 3.7, llvm-config will inject flags that gcc may
+# not support (for example '-Wcovered-switch-default'). If you run into this
+# problem, build with CXX set to a modern clang++ binary instead of g++.
 CXX := g++
 CXXFLAGS := -fno-rtti -O0 -g
 PLUGIN_CXXFLAGS := -fpic
@@ -57,6 +63,8 @@ LLVM_LDFLAGS := `$(LLVM_BIN_PATH)/llvm-config --ldflags --libs --system-libs`
 LLVM_LDFLAGS_NOLIBS := `$(LLVM_BIN_PATH)/llvm-config --ldflags`
 PLUGIN_LDFLAGS := -shared
 
+# These are required when compiling vs. a source distribution of Clang. For
+# binary distributions llvm-config --cxxflags gives the right path.
 CLANG_INCLUDES := \
 	-I$(LLVM_SRC_PATH)/tools/clang/include \
 	-I$(LLVM_BUILD_PATH)/tools/clang/include
@@ -104,6 +112,7 @@ all: make_builddir \
 	$(BUILDDIR)/simple_module_pass \
 	$(BUILDDIR)/simple_bb_pass \
 	$(BUILDDIR)/analyze_geps \
+	$(BUILDDIR)/jit_orc_run \
 	$(BUILDDIR)/hello_pass.so \
 	$(BUILDDIR)/replace_threadidx_with_call \
 	$(BUILDDIR)/access_debug_metadata \
@@ -130,6 +139,9 @@ $(BUILDDIR)/simple_bb_pass: $(SRC_LLVM_DIR)/simple_bb_pass.cpp
 	$(CXX) $(CXXFLAGS) $(LLVM_CXXFLAGS) $^ $(LLVM_LDFLAGS) -o $@
 
 $(BUILDDIR)/analyze_geps: $(SRC_LLVM_DIR)/analyze_geps.cpp
+	$(CXX) $(CXXFLAGS) $(LLVM_CXXFLAGS) $^ $(LLVM_LDFLAGS) -o $@
+
+$(BUILDDIR)/jit_orc_run: $(SRC_LLVM_DIR)/jit_orc_run.cpp
 	$(CXX) $(CXXFLAGS) $(LLVM_CXXFLAGS) $^ $(LLVM_LDFLAGS) -o $@
 
 $(BUILDDIR)/replace_threadidx_with_call: $(SRC_LLVM_DIR)/replace_threadidx_with_call.cpp
